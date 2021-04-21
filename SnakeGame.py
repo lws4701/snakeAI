@@ -179,7 +179,7 @@ class SnakeGame:
         # Touching the snake body
         for block in self.snake_body[1:]:
             if self.snake_pos[0] == block[0] and self.snake_pos[1] == block[1]:
-                game_over()
+                self.game_over()
 
         # Spawning food on the screen
         if not self.food_spawn:
