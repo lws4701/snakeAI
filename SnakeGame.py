@@ -2,6 +2,8 @@ import pygame
 import sys
 import time
 import random
+import numpy as np
+from tensorflow import dtypes
 
 
 class SnakeGame:
@@ -47,8 +49,7 @@ class SnakeGame:
         self.direction = 'RIGHT'
         self.change_to = self.direction
 
-        self.score = 0
-        self.reward = 0
+        self.score = 500
 
     def game_over(self):
         self.difficulty = 25
@@ -73,19 +74,7 @@ class SnakeGame:
         self.direction = 'RIGHT'
         self.change_to = self.direction
 
-        self.score = 0
-        self.reward -= 1000
-        # my_font = pygame.font.SysFont('Times New Roman', 90)
-        # game_over_surface = my_font.render('YOU DIEDED', True, self.red)
-        # game_over_rect = game_over_surface.get_rect()
-        # game_over_rect.midtop = (self.frame_size_x/2, self.frame_size_y/4)
-        # self.game_window.fill(self.black)
-        # self.game_window.blit(game_over_surface, game_over_rect)
-        # self.show_score(0, self.red, 'times', 20)
-        # pygame.display.flip()
-        # time.sleep(2)
-        # pygame.quit()
-        self.reward = 0
+        self.score = 500
 
     # Score
     def show_score(self, choice, color, font, size):
@@ -162,12 +151,11 @@ class SnakeGame:
         # Snake body growing mechanism
         self.snake_body.insert(0, list(self.snake_pos))
         if self.snake_pos[0] == self.food_pos[0] and self.snake_pos[1] == self.food_pos[1]:
-            self.score += 1
-            self.reward += 100
+            self.score += 500
             self.food_spawn = False
         else:
             self.snake_body.pop()
-            self.reward -= 1
+            self.score -= 1
 
         # Game Over conditions
         # Getting out of bounds
@@ -186,6 +174,46 @@ class SnakeGame:
             self.food_pos = [random.randrange(
                 1, (self.frame_size_x//10)) * 10, random.randrange(1, (self.frame_size_y//10)) * 10]
         self.food_spawn = True
+
+    def getStates(self):
+        feature_arr = np.zeros(10)
+        feature_arr[0] = 1 if self.snake_pos[0] > self.food_pos[0] else 0
+        feature_arr[1] = 1 if self.snake_pos[1] > self.food_pos[1] else 0
+        # Check if obstacle directly above
+        if self.snake_pos[1] - 10 < 0:
+            feature_arr[2] = 1
+        else:
+            for i in range(len(self.snake_body)):
+                if(self.snake_body[i][0] == self.snake_pos[0] and self.snake_body[i][1] == self.snake_pos[1] - 10):
+                    feature_arr[2] = 1
+        # Check if obstacle directly below
+        if self.snake_pos[1] + 10 > self.frame_size_y:
+            feature_arr[3] = 1
+        else:
+            for i in range(len(self.snake_body)):
+                if(self.snake_body[i][0] == self.snake_pos[0] and self.snake_body[i][1] == self.snake_pos[1] + 10):
+                    feature_arr[3] = 1
+        # Check if obstacle directly to the left
+        if self.snake_pos[0] - 10 < 0:
+            feature_arr[4] = 1
+        else:
+            for i in range(len(self.snake_body)):
+                if(self.snake_body[i][1] == self.snake_pos[1] and self.snake_body[i][0] == self.snake_pos[0] - 10):
+                    feature_arr[4] = 1
+        # Check if obstacle directly to the right
+        if self.snake_pos[0] + 10 > self.frame_size_x:
+            feature_arr[5] = 1
+        else:
+            for i in range(len(self.snake_body)):
+                if(self.snake_body[i][1] == self.snake_pos[1] and self.snake_body[i][0] == self.snake_pos[0] + 10):
+                    feature_arr[5] = 1
+
+        feature_arr[6] = 1 if self.direction == "UP" else 0
+        feature_arr[7] = 1 if self.direction == "RIGHT" else 0
+        feature_arr[8] = 1 if self.direction == "DOWN" else 0
+        feature_arr[9] = 1 if self.direction == "LEFT" else 0
+
+        return feature_arr
 
 
 if __name__ == '__main__':
