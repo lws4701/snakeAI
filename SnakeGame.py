@@ -3,7 +3,6 @@ import sys
 import time
 import random
 import numpy as np
-from tensorflow import dtypes
 
 
 class SnakeGame:
@@ -17,6 +16,8 @@ class SnakeGame:
         self.difficulty = 25
         self.frame_size_x = 720
         self.frame_size_y = 480
+        self.games = 0
+        self.bestScore = 0
         check_errors = pygame.init()
         if check_errors[1] > 0:
             print(
@@ -39,8 +40,8 @@ class SnakeGame:
         self.fps_controller = pygame.time.Clock()
 
         # Game variables
-        self.snake_pos = [100, 50]
-        self.snake_body = [[100, 50], [100-10, 50], [100-(2*10), 50]]
+        self.snake_pos = [360, 240]
+        self.snake_body = [[360, 240], [360-10, 240], [360-(2*10), 240]]
 
         self.food_pos = [random.randrange(1, (self.frame_size_x//10))
                          * 10, random.randrange(1, (self.frame_size_y//10)) * 10]
@@ -49,9 +50,13 @@ class SnakeGame:
         self.direction = 'RIGHT'
         self.change_to = self.direction
 
-        self.score = 500
+        self.score = 0
+        self.reset_next = False
 
-    def game_over(self):
+    def reset(self):
+        self.games += 1
+        if(self.score>self.bestScore):
+            self.bestScore = self.score
         self.difficulty = 25
         self.frame_size_x = 720
         self.frame_size_y = 480
@@ -64,23 +69,27 @@ class SnakeGame:
         self.blue = pygame.Color(0, 0, 255)
 
         # Game variables
-        self.snake_pos = [100, 50]
-        self.snake_body = [[100, 50], [100-10, 50], [100-(2*10), 50]]
+        self.snake_pos = [360, 240]
+        self.snake_body = [[360, 240], [360-10, 240], [360-(2*10), 240]]
 
         self.food_pos = [random.randrange(1, (self.frame_size_x//10))
                          * 10, random.randrange(1, (self.frame_size_y//10)) * 10]
+            
         self.food_spawn = True
 
         self.direction = 'RIGHT'
         self.change_to = self.direction
 
-        self.score = 500
+        self.score = 0
+        self.reset_next = False
 
+    def getScore(self):
+        return self.score
     # Score
     def show_score(self, choice, color, font, size):
         score_font = pygame.font.SysFont(font, size)
         score_surface = score_font.render(
-            'Score : ' + str(self.score), True, color)
+            'Score: ' + str(self.score) + ' game ' + str(self.games) + ' best ' + str(self.bestScore), True, color)
         score_rect = score_surface.get_rect()
         if choice == 1:
             score_rect.midtop = (self.frame_size_x/10, 15)
@@ -108,7 +117,12 @@ class SnakeGame:
         # Refresh rate
         self.fps_controller.tick(self.difficulty)
 
+    def takeAction(self,direction):
+        self.change_to = direction
+
     def update(self):
+        if(self.reset_next):
+            self.reset()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -155,30 +169,31 @@ class SnakeGame:
             self.food_spawn = False
         else:
             self.snake_body.pop()
-            self.score -= 1
+            # self.score -= 1
 
         # Game Over conditions
         # Getting out of bounds
         if self.snake_pos[0] < 0 or self.snake_pos[0] > self.frame_size_x-10:
-            self.game_over()
+            self.reset_next = True
         if self.snake_pos[1] < 0 or self.snake_pos[1] > self.frame_size_y-10:
-            self.game_over()
+            self.reset_next = True
 
         # Touching the snake body
         for block in self.snake_body[1:]:
             if self.snake_pos[0] == block[0] and self.snake_pos[1] == block[1]:
-                self.game_over()
+                self.reset_next = True
 
         # Spawning food on the screen
         if not self.food_spawn:
-            self.food_pos = [random.randrange(
-                1, (self.frame_size_x//10)) * 10, random.randrange(1, (self.frame_size_y//10)) * 10]
+            self.food_pos = [random.randrange(1, (self.frame_size_x//10))
+                         * 10, random.randrange(1, (self.frame_size_y//10)) * 10]
+            
         self.food_spawn = True
 
     def getStates(self):
         feature_arr = np.zeros(10)
-        feature_arr[0] = 1 if self.snake_pos[0] > self.food_pos[0] else 0
-        feature_arr[1] = 1 if self.snake_pos[1] > self.food_pos[1] else 0
+        feature_arr[0] = 1 if self.snake_pos[0] >= self.food_pos[0] else 0
+        feature_arr[1] = 1 if self.snake_pos[1] >= self.food_pos[1] else 0
         # Check if obstacle directly above
         if self.snake_pos[1] - 10 < 0:
             feature_arr[2] = 1
