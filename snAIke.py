@@ -43,13 +43,11 @@ class AI:
         if IMPORT:
             self.qTable = importJSON()
         else:
-            self.qTable = np.zeros((118784, 4))
+            self.qTable = np.zeros((118784*2, 4))
 
         self.lr = .1
 
         self.gamma = .85
-
-        self.nextSave = 5000
 
     def stateToNum(self, state) -> int:
         sum = 0
@@ -57,48 +55,72 @@ class AI:
             sum += 2**i*state[i]
         return int(sum)
 
-    def learn(self):
-        # print(f'self.epsilon {self.epsilon} \nself.currentState {self.currentState}\nbest score: {self.game.bestScore}')
-        print(f'best score: {self.game.bestScore}, score {self.game.score}')
-        if random.uniform(0, 1) < self.epsilon:
-            # do a random action
-            self.game.takeAction(self.actions[random.randint(0, 3)])
-            self.game.update()
-        else:
-            # take best known action
-            self.game.takeAction(self.actions[np.argmax(
-                self.qTable[self.stateToNum(self.currentState), :])])
-            self.game.update()
+    def do_episode(self):
+        self.game.reset()
+        history = []
+        while(True):
+            if random.uniform(0, 1) < self.epsilon:
+                # do a random action
+                action = self.game.takeAction(self.actions[random.randint(0, 3)])
+                self.game.update()
+                history.append((self.stateToNum(self.currentState),self.actions.index(action),self.stateToNum(self.game.getStates())))
+            else:
+                # take best known action
+                action = self.game.takeAction(self.actions[np.argmax(
+                    self.qTable[self.stateToNum(self.currentState), :])])
+                self.game.update()
+                history.append((self.stateToNum(self.currentState),self.actions.index(action),self.stateToNum(self.game.getStates())))
+            self.currentState = self.game.getStates()
+            self.game.show()
+            if(self.game.reset_next):
+                self.learn(history)
+                break
 
-        # print(self.actions.index(self.game.change_to))
-        newState = self.game.getStates()
+    def learn(self,history):
+        
+        history = list(reversed(history))
 
-        self.qTable[self.stateToNum(self.currentState), self.actions.index(
-            self.game.change_to)] = self.qTable[self.stateToNum(self.currentState)][self.actions.index(self.game.change_to)] + self.lr * (self.game.getScore() + self.gamma * np.max([self.qTable[self.stateToNum(newState), x] - self.qTable[self.stateToNum(
-                self.currentState)][self.actions.index(self.game.change_to)] for x in range(4)]))
-        # print(self.qTable[self.stateToNum(self.currentState), self.actions.index(
-        #    self.game.change_to)])
+        dist = 0
+        prev_dist = 0
+        index = 0
+        
+        for exp in history:
+            state = exp[0]
+            action = exp[1]
+            newState = exp [2]
+            dist = newState>>10
+            prev_dist = state>>10
 
-        # self.game.show()
-        self.currentState = self.game.getStates()
+            if index == 0:
+                reward = -1000
+            elif abs(dist-prev_dist) > 1 and index != len(history)-1:
+                reward = 500
+            else:
+                reward = 1
+
+            # print(f'state {state}, action {action}, newState {newState}, dist {dist}, prev {prev_dist} reward {reward}')
+            
+            self.qTable[state, action] = self.qTable[state,action] + \
+                self.lr * (reward + self.gamma * 
+                np.max(
+                    [self.qTable[newState, x] - \
+                    self.qTable[state,action] for x in range(4)]))
+
+            index += 1
+
         if(self.epsilon > .2):
             self.epsilon -= .01
 
-        self.nextSave -= 1
-
-        if self.nextSave == 0:
-            saveToJSON(self.qTable)
-            self.nextSave = 5000
 
 
 def main():
     GameAI = AI(False)
-    while(True):
-        GameAI.learn()
-        # print(GameAI.qTable)
-        # GameAI.game.update()
-        # GameAI.game.show()
-        # GameAI.states = game.getStates()
+    episodes = 1000000
+    for currentEp in range(episodes):
+        GameAI.do_episode()
+        if(currentEp%5000 == 0):
+            print("Saving!")
+            saveToJSON(GameAI.qTable)
 
 
 if __name__ == '__main__':

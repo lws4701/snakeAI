@@ -125,10 +125,11 @@ class SnakeGame:
 
     def takeAction(self, direction):
         self.change_to = direction
+        return direction
 
     def update(self):
-        if(self.reset_next):
-            self.reset()
+        # if(self.reset_next):
+        #     self.reset()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -181,6 +182,7 @@ class SnakeGame:
         # Getting out of bounds
         if self.snake_pos[0] < 0 or self.snake_pos[0] > self.frame_size_x-10:
             self.reset_next = True
+            
         if self.snake_pos[1] < 0 or self.snake_pos[1] > self.frame_size_y-10:
             self.reset_next = True
 
@@ -189,14 +191,14 @@ class SnakeGame:
             if self.snake_pos[0] == block[0] and self.snake_pos[1] == block[1]:
                 self.reset_next = True
 
-        if self.dist > abs(self.food_pos[0]//10-self.snake_pos[0]//10) + \
-                abs(self.food_pos[1]//10-self.snake_pos[1]//10):
-            self.score -= 1
-        else:
-            self.score += 1
+        # if self.dist > abs(self.food_pos[0]//10-self.snake_pos[0]//10) + \
+        #         abs(self.food_pos[1]//10-self.snake_pos[1]//10):
+        #     self.score -= 1
+        # else:
+        #     self.score += 1
 
-        self.dist = abs(self.food_pos[0]//10-self.snake_pos[0]//10) + \
-            abs(self.food_pos[1]//10-self.snake_pos[1]//10)
+        # self.dist = abs(self.food_pos[0]//10-self.snake_pos[0]//10) + \
+        #     abs(self.food_pos[1]//10-self.snake_pos[1]//10)
 
         # Spawning food on the screen
         if not self.food_spawn:
