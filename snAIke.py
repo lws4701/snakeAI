@@ -17,7 +17,7 @@ def saveToJSON(array: np.array) -> None:
 def importJSON() -> np.array:
     with open("qtable.txt", "r") as file:
         asDict = dict(json.loads(file.read()))
-        arr = np.zeros((1024, 4))
+        arr = np.zeros((118784, 4))
         row = 0
         col = 0
         for v in asDict.values():
@@ -26,8 +26,8 @@ def importJSON() -> np.array:
                 col += 1
             col = 0
             row += 1
-        arr.reshape((1024, 4))
-        print(arr)
+        arr.reshape((118784, 4))
+        # print(arr)
         return arr
 
 
@@ -43,9 +43,9 @@ class AI:
         if IMPORT:
             self.qTable = importJSON()
         else:
-            self.qTable = np.zeros((1024, 4))
+            self.qTable = np.zeros((118784, 4))
 
-        self.lr = 1e-2
+        self.lr = .1
 
         self.gamma = .85
 
@@ -58,8 +58,8 @@ class AI:
         return int(sum)
 
     def learn(self):
-        print(
-            f'self.epsilon {self.epsilon} \nself.currentState {self.currentState}\nbest score: {self.game.bestScore}')
+        # print(f'self.epsilon {self.epsilon} \nself.currentState {self.currentState}\nbest score: {self.game.bestScore}')
+        print(f'best score: {self.game.bestScore}, score {self.game.score}')
         if random.uniform(0, 1) < self.epsilon:
             # do a random action
             self.game.takeAction(self.actions[random.randint(0, 3)])
@@ -72,16 +72,20 @@ class AI:
 
         # print(self.actions.index(self.game.change_to))
         newState = self.game.getStates()
+
         self.qTable[self.stateToNum(self.currentState), self.actions.index(
-            self.game.change_to)] = self.qTable[self.stateToNum(self.currentState)][self.actions.index(self.game.change_to)]
-        + self.lr * (self.game.getScore() + self.gamma * np.max(self.qTable[self.stateToNum(
-            newState), :] - self.qTable[self.stateToNum(self.currentState)][self.actions.index(self.game.change_to)]))
+            self.game.change_to)] = self.qTable[self.stateToNum(self.currentState)][self.actions.index(self.game.change_to)] + self.lr * (self.game.getScore() + self.gamma * np.max([self.qTable[self.stateToNum(newState), x] - self.qTable[self.stateToNum(
+                self.currentState)][self.actions.index(self.game.change_to)] for x in range(4)]))
+        # print(self.qTable[self.stateToNum(self.currentState), self.actions.index(
+        #    self.game.change_to)])
 
         # self.game.show()
         self.currentState = self.game.getStates()
         if(self.epsilon > .2):
-            self.epsilon -= .0001
+            self.epsilon -= .01
+
         self.nextSave -= 1
+
         if self.nextSave == 0:
             saveToJSON(self.qTable)
             self.nextSave = 5000
@@ -91,9 +95,10 @@ def main():
     GameAI = AI(False)
     while(True):
         GameAI.learn()
-        # game.update()
-        # game.show()
-        #GameAI.states = game.getStates()
+        # print(GameAI.qTable)
+        # GameAI.game.update()
+        # GameAI.game.show()
+        # GameAI.states = game.getStates()
 
 
 if __name__ == '__main__':
