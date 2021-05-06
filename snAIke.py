@@ -17,7 +17,7 @@ def saveToJSON(array: np.array) -> None:
 def importJSON() -> np.array:
     with open("qtable.txt", "r") as file:
         asDict = dict(json.loads(file.read()))
-        arr = np.zeros((118784, 4))
+        arr = np.zeros((118784*2, 4))
         row = 0
         col = 0
         for v in asDict.values():
@@ -26,7 +26,7 @@ def importJSON() -> np.array:
                 col += 1
             col = 0
             row += 1
-        arr.reshape((118784, 4))
+        arr.reshape((118784*2, 4))
         # print(arr)
         return arr
 
@@ -73,10 +73,12 @@ class AI:
             self.currentState = self.game.getStates()
             self.game.show()
             if(self.game.reset_next):
-                self.learn(history)
+                self.learn(history,self.game.timed_out)
                 break
 
-    def learn(self,history):
+        
+
+    def learn(self,history,timed_out):
         
         history = list(reversed(history))
 
@@ -92,7 +94,10 @@ class AI:
             prev_dist = state>>10
 
             if index == 0:
-                reward = -1000
+                if timed_out:
+                    reward = 1
+                else:
+                    reward = -1000
             elif abs(dist-prev_dist) > 1 and index != len(history)-1:
                 reward = 500
             else:
@@ -114,11 +119,12 @@ class AI:
 
 
 def main():
-    GameAI = AI(False)
+    GameAI = AI(True)
     episodes = 1000000
     for currentEp in range(episodes):
+        print(f'Game number: {currentEp+1}')
         GameAI.do_episode()
-        if(currentEp%5000 == 0):
+        if(currentEp%100 == 0):
             print("Saving!")
             saveToJSON(GameAI.qTable)
 

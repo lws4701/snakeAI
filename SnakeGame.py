@@ -56,6 +56,12 @@ class SnakeGame:
 
         self.dist = inf
 
+        self.steps = 0
+        self.maxsteps = 200
+        self.bonus_steps = 100
+        self.timed_out = False
+
+
     def reset(self):
         self.games += 1
         if(self.score > self.bestScore):
@@ -87,6 +93,9 @@ class SnakeGame:
         self.reset_next = False
 
         self.dist = inf
+
+        self.steps = 0
+        self.timed_out = False
 
     def getScore(self):
         return self.score
@@ -174,6 +183,7 @@ class SnakeGame:
         if self.snake_pos[0] == self.food_pos[0] and self.snake_pos[1] == self.food_pos[1]:
             self.score += 500
             self.food_spawn = False
+            self.steps -= self.bonus_steps
         else:
             self.snake_body.pop()
             # self.score -= 1
@@ -191,14 +201,11 @@ class SnakeGame:
             if self.snake_pos[0] == block[0] and self.snake_pos[1] == block[1]:
                 self.reset_next = True
 
-        # if self.dist > abs(self.food_pos[0]//10-self.snake_pos[0]//10) + \
-        #         abs(self.food_pos[1]//10-self.snake_pos[1]//10):
-        #     self.score -= 1
-        # else:
-        #     self.score += 1
-
-        # self.dist = abs(self.food_pos[0]//10-self.snake_pos[0]//10) + \
-        #     abs(self.food_pos[1]//10-self.snake_pos[1]//10)
+        #ran out of time
+        if self.steps >= self.maxsteps:
+            self.reset_next = True
+            self.timed_out = True
+        self.steps += 1
 
         # Spawning food on the screen
         if not self.food_spawn:
